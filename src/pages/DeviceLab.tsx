@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getDb, saveDb, fmtBytes } from "../lib/db";
 import { detectBrowserProfile, refineDetectedProfile, searchCatalog, catalogEntryToProfile, densityLabel, DEVICE_CATALOG } from "../lib/device";
-import { latestVersion, selectArtifacts, appByPkg, downloadCount } from "../lib/api";
+import { latestVersion, selectArtifacts } from "../lib/api";
 import { Icon, Badge, Reveal, AppIcon } from "../components/ui";
 import { useStore } from "../state/store";
 
@@ -63,11 +63,13 @@ export default function DeviceLab() {
     return [...g.entries()];
   }, [results]);
 
-  const previews = ["com.copperleaf.riftracers", "com.hexline.vaultkey", "com.northwind.tidalnotes"]
-    .map((p) => appByPkg(p)).filter(Boolean).map((app) => {
-      const v = latestVersion(app!.id);
+  const previews = getDb().applications
+    .filter((a) => a.status === "approved")
+    .slice(0, 3)
+    .map((app) => {
+      const v = latestVersion(app.id);
       const sel = v ? selectArtifacts(v, active) : null;
-      return { app: app!, sel };
+      return { app, sel };
     });
 
   const spec = (label: string, value: React.ReactNode, icon: string) => (
@@ -136,6 +138,14 @@ export default function DeviceLab() {
           <Reveal className="card p-5">
             <h3 className="font-disp font-semibold text-[15px] mb-1">What Kaisel delivers on this device</h3>
             <p className="text-mut text-[12.5px] mb-4">Compatibility preview — resolved live against the active fingerprint.</p>
+            {previews.length === 0 && (
+              <div className="rounded-xl border border-dashed border-line2/70 p-5 text-center anim-fade-up">
+                <Icon name="box" size={22} className="text-mut mx-auto mb-2" />
+                <p className="text-[13px] font-medium">No published apps yet</p>
+                <p className="text-[12px] text-mut mt-1 leading-relaxed">The moment a developer's first build reaches <b className="text-jade font-mono">READY</b>, this panel resolves exactly what <b className="text-ink">{active.label}</b> would download for it.</p>
+                <a href="#/dev" className="btn-ghost inline-flex items-center gap-1.5 px-4 py-2 text-[12.5px] font-medium mt-3 cursor-pointer">Publish an app <Icon name="arrow-r" size={12} /></a>
+              </div>
+            )}
             <div className="space-y-2">
               {previews.map(({ app, sel }) => (
                 <a key={app.id} href={`#/app/${app.packageName}`} className="flex items-center gap-3 bg-panel2 border border-line rounded-xl px-3.5 py-3 hover:border-jade/50 transition-colors group">
@@ -210,7 +220,7 @@ export default function DeviceLab() {
           <span className="flex items-center gap-2"><Icon name="shield" size={15} className="text-jade" /> Every generated build is sealed with per-file SHA-256 digests in MANIFEST.json</span>
           <span className="flex items-center gap-2"><Icon name="phone" size={15} className="text-jade" /> On Android the client streams splits straight into a PackageInstaller session — no ZIP needed</span>
           <span className="flex items-center gap-2"><Icon name="key" size={15} className="text-jade" /> Developer signatures are preserved — never stripped or re-signed</span>
-          <span className="ml-auto font-mono text-[11.5px]">{downloadCount("app_riftracers") + 0 > 0 ? `${getDb().artifacts.filter((a) => a.status === "available").length} artifacts indexed` : ""}</span>
+          <span className="ml-auto font-mono text-[11.5px]">{getDb().artifacts.filter((a) => a.status === "available").length} artifacts indexed</span>
         </div>
       </Reveal>
     </div>

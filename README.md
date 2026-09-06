@@ -1,7 +1,9 @@
 # Kaisel Store
 
 An alternative Android app store with **device-targeted APK distribution** from AAB and APK artifacts.
-Functional end-to-end flow over a fictional catalog — navy-on-white UI, dark mode included.
+Navy-on-white UI with dark mode. **The store ships with an empty catalog** — every app, version,
+artifact, review and download you see was published or performed through the build itself,
+exactly like a real marketplace on day one.
 
 ## What actually works
 
@@ -46,7 +48,7 @@ storage     S3-compatible vault (outside web root), Redis cache + queue
 | File | Responsibility |
 | --- | --- |
 | `src/lib/types.ts` | Domain model / DTOs shared with future backend + Android client |
-| `src/lib/db.ts` | Persistence (localStorage documents + IndexedDB blob vault), seed data (22 apps, 15 categories, 6 developers, ~150 artifacts) |
+| `src/lib/db.ts` | Persistence (localStorage documents + IndexedDB blob vault), empty-catalog seed (15 categories, publisher accounts, device profiles) |
 | `src/lib/processor.ts` | ZIP parser, SHA-256, analysis, `BundletoolAdapter`, processing pipeline |
 | `src/lib/api.ts` | REST-shaped API: search, compatibility engine, signed download tokens, rate limits, request log |
 | `src/lib/device.ts` | Browser device detection + `DeviceProfile` presets |
@@ -110,9 +112,14 @@ with a navy-slate dark mode. Preference persists per browser.
 
 ```bash
 npm install
-npm run dev       # web app
+npm run dev       # web app — opens on an empty store
 npm run build     # production bundle (dist/)
 ```
+
+The store boots empty by design. To populate it: **Developers → sign in → New application**
+(name, package, icon, feature art, screenshots) → **Publish version** (drop any `.apk`/`.aab`/`.apks`) →
+watch the processor reach `READY` — the app appears in the gallery, home rails and search instantly.
+**Admin → System → Reseed database** restores the empty-catalog state at any time.
 
 Production-style environment with Postgres/Redis/worker containers:
 
@@ -123,13 +130,17 @@ docker compose up
 
 ## Testing notes
 
-Compatibility-engine behaviours to exercise (all reachable through the UI):
+Everything below runs against apps **you publish** through the console (the store ships empty):
 
-- **ABI fatal**: switch device to *x86 Emulator tablet* → *Vaultkey* (arm64-only, no universal) shows "Not compatible".
-- **Universal fallback**: same device → *Rift Racers* resolves the universal APK.
-- **minSdk**: *Nexus 5 (API 23)* → *Vaultkey* (minSdk 26) incompatible with a clear reason.
-- **maxSdk**: *Pixel 9 Pro (API 35)* → *Batterysmith* (maxSdk 33) incompatible.
-- **Split-set selection**: *Tidal Notes* on Pixel 9 Pro → base + config.arm64_v8a + config.xxhdpi, summed size.
-- **SHA-256 round-trip**: download any app → Downloads → Verify (re-hashes the stored blob, compares).
-- **Pipeline failure**: in the dev console upload a renamed `.txt` as `.apk` → job FAILED with log reason.
-- **Updates**: Updates shows seeded versionCode deltas; updating re-downloads and registers the new code.
+- **End-to-end**: register an app (icon + feature art + screenshots) → publish an AAB/APK → processor
+  reaches `READY` → the app appears in gallery, search, home rails and the category it was filed under.
+- **Device-targeted delivery**: on the app page, **Generate build for {device}** resolves the split set for
+  the active profile; switch devices in the navbar (e.g. *x86 Emulator*) and an arm64-only app flips to
+  "Not compatible" with the exact reason.
+- **Split-set vs universal**: upload a second version as a plain universal `.apk` and compare the resolved
+  set size on the same device — the "% saved vs universal" chip appears on split builds.
+- **SHA-256 round-trip**: download → Downloads → Verify (re-hashes the stored blob against the recorded digest).
+- **Pipeline failure**: in the dev console upload a renamed `.txt` as `.apk` → job FAILED with a log reason.
+- **Updates**: publish a higher versionCode → Updates page flags the installed app and one tap re-downloads
+  the device-matched set.
+- **Moderation**: Admin can reject/disable the app (it leaves the gallery) or feature it (home spotlight).

@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { Application, Category } from "../lib/types";
 import { getDb, fmtInt, fmtBytes } from "../lib/db";
-import { api, appRating, downloadCount, latestVersion, appSize, compatSummary, currentDevice } from "../lib/api";
+import { api, appRating, downloadCount, latestVersion, appSize, currentDevice } from "../lib/api";
 import { AppIcon, Icon, StarRow, Badge, SkelRow, Reveal } from "../components/ui";
 import { Rail, RailCard, AppRow, CompatDot } from "../components/layout";
-import { navigate } from "../state/store";
+import { navigate, useStore } from "../state/store";
 import { densityLabel } from "../lib/device";
 
 interface HomeData {
@@ -18,11 +18,127 @@ interface HomeData {
   categories: Category[];
 }
 
+/* ---------- animated pipeline terminal (opening band) ---------- */
+
+const PIPELINE_SCRIPT = [
+  { cls: "text-mut", text: "$ kaisel processor --watch" },
+  { cls: "", text: "intake vault .................. sealed" },
+  { cls: "lv-ok", text: "compatibility index ........... online · 0 artifacts" },
+  { cls: "", text: "waiting for first submission" },
+  { cls: "lv-info", text: "→ developer registers listing (icon · art · screenshots)" },
+  { cls: "lv-info", text: "→ AAB uploaded · ZIP central directory parsed" },
+  { cls: "lv-ok", text: "  signing block v2+v3 preserved" },
+  { cls: "lv-info", text: "→ device APK set derived (base + config splits)" },
+  { cls: "lv-ok", text: "READY · indexed for 4 ABIs · 6 densities" },
+  { cls: "", text: "next visitor's device gets its own build" },
+];
+
+function PipelineTerminal() {
+  const [n, setN] = useState(1);
+  useEffect(() => {
+    const t = window.setInterval(() => setN((v) => (v >= PIPELINE_SCRIPT.length ? 1 : v + 1)), 850);
+    return () => window.clearInterval(t);
+  }, []);
+  return (
+    <div className="term rounded-xl p-4 sm:p-5 overflow-hidden relative h-full min-h-[240px]">
+      <div className="absolute left-0 right-0 h-12 pointer-events-none" style={{ background: "linear-gradient(180deg, rgba(56,140,220,0.10), transparent)", animation: "kScan 4.5s linear infinite" }} />
+      <div className="text-mut text-[11px] mb-2">artifact-processor · embedded expander · idle-watch</div>
+      {PIPELINE_SCRIPT.slice(0, n).map((l, i) => (
+        <div key={i} className={`${l.cls} anim-fade-up`}>{l.text}</div>
+      ))}
+      <div className="animate-pulse">▍</div>
+    </div>
+  );
+}
+
+/* ---------- ghost shelf (empty rails) ---------- */
+
+function GhostShelf() {
+  return (
+    <Reveal className="mb-12">
+      <div className="flex items-end justify-between gap-4 mb-4">
+        <div>
+          <h2 className="font-disp font-bold text-[22px] tracking-tight">The shelf is waiting</h2>
+          <p className="text-mut text-[13px] mt-0.5">Popular, new and category rails fill themselves the moment a build reaches <b className="text-jade font-mono">READY</b>.</p>
+        </div>
+        <button onClick={() => navigate("/dev")} className="btn-ghost hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-[12.5px] font-medium hover:text-jade cursor-pointer">
+          Publish the first app <Icon name="arrow-r" size={13} />
+        </button>
+      </div>
+      <div className="grid sm:grid-cols-3 gap-4">
+        {["Popular right now", "New & noteworthy", "Essential tools"].map((t, k) => (
+          <div key={t} className="anim-fade-up" style={{ animationDelay: `${k * 90}ms` }}>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-mut mb-3">{t}</div>
+            <div className="space-y-2.5">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="rounded-xl border border-dashed border-line2/70 p-3.5 flex items-center gap-3 opacity-70 hover:opacity-100 hover:border-jade/40 transition-all">
+                  <span className="w-10 h-10 rounded-[11px] border border-dashed border-line2 grid place-items-center text-mut"><Icon name="box" size={16} /></span>
+                  <span className="text-[12.5px] text-mut">First {t.split(" ")[0].toLowerCase()} app lands here</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Reveal>
+  );
+}
+
+/* ---------- publish pipeline strip ---------- */
+
+function PublishStrip() {
+  const steps: [string, string, string][] = [
+    ["doc", "Register a listing", "name · package · icon · feature art · screenshots"],
+    ["upload", "Upload the artifact", "AAB / APK / APKS up to 200 MB, hashed at intake"],
+    ["layers", "Processor derives splits", "ABI · density · SDK constraints indexed live"],
+    ["phone", "Device-matched delivery", "each visitor downloads a build for their own hardware"],
+  ];
+  return (
+    <Reveal className="mb-12">
+      <div className="rounded-2xl border border-line bg-panel overflow-hidden">
+        <div className="px-6 pt-6 sm:px-8 flex items-center gap-3">
+          <Badge tone="jade"><Icon name="rocket" size={11} /> How apps reach this shelf</Badge>
+          <span className="text-[12px] text-mut font-mono hidden sm:inline">average time-to-live: under a minute</span>
+        </div>
+        <div className="flex flex-col lg:flex-row items-stretch gap-0 p-6 sm:p-8">
+          {steps.map(([ic, title, sub], i) => (
+            <React.Fragment key={title}>
+              <div className="flex-1 flex items-start gap-3.5 group cursor-default min-w-0">
+                <span className="relative shrink-0">
+                  <span className="w-11 h-11 rounded-xl bg-jade/12 border border-jade/30 grid place-items-center text-jade transition-transform group-hover:scale-110 group-hover:-rotate-3">
+                    <Icon name={ic} size={19} />
+                  </span>
+                  <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-panel border border-line grid place-items-center text-[10px] font-mono font-bold text-mut">0{i + 1}</span>
+                </span>
+                <span className="min-w-0">
+                  <span className="block font-disp font-semibold text-[14.5px] group-hover:text-jade transition-colors">{title}</span>
+                  <span className="block text-[12px] text-mut leading-relaxed mt-0.5">{sub}</span>
+                </span>
+              </div>
+              {i < steps.length - 1 && (
+                <div className="hidden lg:flex items-center px-3 text-line2" aria-hidden>
+                  <svg width="34" height="12" viewBox="0 0 34 12" className="text-jade/50">
+                    <line x1="0" y1="6" x2="26" y2="6" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 4" className="dash-flow" />
+                    <path d="M26 1.5L33 6l-7 4.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+              )}
+              {i < steps.length - 1 && <div className="lg:hidden flex justify-start pl-5 py-1 text-jade/50"><Icon name="chev-d" size={15} /></div>}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+    </Reveal>
+  );
+}
+
 export default function Home() {
+  const { tick } = useStore();
   const [data, setData] = useState<HomeData | null>(null);
   const [slide, setSlide] = useState(0);
   const timer = useRef<number>(0);
   const device = currentDevice();
+  void tick;
 
   useEffect(() => {
     let on = true;
@@ -35,7 +151,7 @@ export default function Home() {
       if (on) setData({ featured, popular, newest, games, productivity, tools, recommended, categories });
     })();
     return () => { on = false; };
-  }, []);
+  }, [tick]);
 
   useEffect(() => {
     if (!data?.featured.length) return;
@@ -47,11 +163,12 @@ export default function Home() {
   const totalArtifacts = db.artifacts.filter((a) => a.status === "available").length;
   const totalDownloads = db.applications.reduce((s, a) => s + downloadCount(a.id), 0);
   const feat = data?.featured ?? [];
-  const cur = feat[slide];
+  const cur = feat[Math.min(slide, Math.max(0, feat.length - 1))];
+  const hasApps = (data?.popular.length ?? 0) > 0;
 
   return (
     <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-6">
-      {/* ============ SPOTLIGHT ============ */}
+      {/* ============ SPOTLIGHT / GRAND OPENING ============ */}
       <section className="relative overflow-hidden rounded-2xl mb-4" style={{ background: "linear-gradient(125deg, #13294f, #0a1a38 70%)", border: "1px solid rgba(130,165,230,0.22)" }}>
         <div className="kaisel-grid absolute inset-0 opacity-60" />
         {!data ? (
@@ -102,7 +219,44 @@ export default function Home() {
               ))}
             </div>
           </div>
-        ) : null}
+        ) : (
+          /* ---- grand opening (empty catalog) ---- */
+          <div className="relative grid lg:grid-cols-[1.15fr_1fr] gap-8 items-stretch p-6 sm:p-10">
+            <div className="flex flex-col justify-center anim-fade-up">
+              <div className="flex flex-wrap items-center gap-2 mb-5">
+                <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11.5px] font-semibold uppercase tracking-[0.12em]" style={{ background: "rgba(56,211,159,0.12)", border: "1px solid rgba(56,211,159,0.35)", color: "#7fe0bd" }}>
+                  <span className="relative flex w-2 h-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: "#4ade9f" }} /><span className="relative inline-flex rounded-full w-2 h-2" style={{ background: "#4ade9f" }} /></span>
+                  Store online · {db.applications.length} apps live
+                </span>
+                {device.detected && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11.5px] font-mono" style={{ background: "rgba(140,170,230,0.12)", border: "1px solid rgba(140,170,230,0.3)", color: "#a9c2ee" }}>
+                    <Icon name="cpu" size={12} /> {device.label} identified
+                  </span>
+                )}
+              </div>
+              <h1 className="font-disp font-bold text-[34px] sm:text-[48px] leading-[1.02] tracking-tight text-[#eef3fc]">
+                The shelf is empty.<br />
+                <span style={{ color: "#8fb3f0" }}>Your build won't be.</span>
+              </h1>
+              <p className="text-[15px] mt-5 max-w-lg leading-relaxed" style={{ color: "#b9c8e4" }}>
+                Kaisel is a device-matched app store: every listing here was published by a developer,
+                processed by the <b className="text-white">ArtifactProcessor</b>, and is delivered as a build
+                generated for the exact device that asks for it.
+              </p>
+              <div className="flex flex-wrap gap-3 mt-7">
+                <button onClick={() => navigate("/dev")} className="px-6 py-3 text-[14px] inline-flex items-center gap-2 cursor-pointer rounded-xl font-semibold text-[#0d1e40] transition-all hover:-translate-y-px" style={{ background: "#ffffff", boxShadow: "0 10px 24px -12px rgba(0,0,0,0.55)" }}>
+                  <Icon name="rocket" size={16} /> Publish the first app
+                </button>
+                <button onClick={() => navigate("/device")} className="px-5 py-3 text-[14px] cursor-pointer rounded-xl font-medium inline-flex items-center gap-2 transition-colors" style={{ border: "1px solid rgba(140,170,230,0.35)", color: "#dce6f8" }}>
+                  <Icon name="cpu" size={15} /> Open Device Lab
+                </button>
+              </div>
+            </div>
+            <div className="hidden md:block anim-fade-up" style={{ animationDelay: "120ms" }}>
+              <PipelineTerminal />
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ============ TICKER ============ */}
@@ -116,7 +270,9 @@ export default function Home() {
               <span className="text-jade">SHA-256 on every artifact</span>
               <span>delivering for API {device.androidApi} · {device.abi} · {densityLabel(device.density)}</span>
               <span className="text-gold">AAB expander: embedded</span>
-              <span>{db.versions.filter((v) => v.status === "ready").length} versions ready</span>
+              {hasApps
+                ? <span>{db.versions.filter((v) => v.status === "ready").length} versions ready</span>
+                : <span className="text-cy">compatibility index online — awaiting first READY build</span>}
               <span>signed artifacts preserved — never re-signed</span>
             </div>
           ))}
@@ -126,25 +282,31 @@ export default function Home() {
       {/* ============ CATEGORIES ============ */}
       <Reveal className="mb-12">
         <h2 className="font-disp font-bold text-[22px] tracking-tight mb-1">Browse by category</h2>
-        <p className="text-mut text-[13px] mb-5">Every category ships device-matched artifacts.</p>
+        <p className="text-mut text-[13px] mb-5">The store's structure is ready — every category ships device-matched artifacts.</p>
         <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
-          {(data?.categories ?? getDb().categories).map((c, i) => (
-            <a key={c.id} href={`#/apps?cat=${c.id}`}
-              className="group card p-3.5 flex flex-col gap-3 hover:-translate-y-0.5 hover:border-jade/50 transition-all anim-fade-up"
-              style={{ animationDelay: `${i * 30}ms` }}>
-              <span className="w-9 h-9 rounded-lg grid place-items-center" style={{ background: `hsl(${c.hue} 55% 45% / 0.18)`, color: `hsl(${c.hue} 70% 58%)` }}>
-                <Icon name={c.glyph} size={18} />
-              </span>
-              <span className="text-[13px] font-semibold group-hover:text-jade transition-colors">{c.name}</span>
-            </a>
-          ))}
+          {(data?.categories ?? getDb().categories).map((c, i) => {
+            const count = db.applications.filter((a) => a.status === "approved" && a.categoryIds.includes(c.id)).length;
+            return (
+              <a key={c.id} href={`#/apps?cat=${c.id}`}
+                className="group card p-3.5 flex flex-col gap-3 hover:-translate-y-0.5 hover:border-jade/50 transition-all anim-fade-up"
+                style={{ animationDelay: `${i * 30}ms` }}>
+                <span className="w-9 h-9 rounded-lg grid place-items-center" style={{ background: `hsl(${c.hue} 55% 45% / 0.18)`, color: `hsl(${c.hue} 70% 58%)` }}>
+                  <Icon name={c.glyph} size={18} />
+                </span>
+                <span className="flex items-baseline justify-between gap-2">
+                  <span className="text-[13px] font-semibold group-hover:text-jade transition-colors">{c.name}</span>
+                  <span className="text-[10.5px] font-mono text-mut">{count || ""}</span>
+                </span>
+              </a>
+            );
+          })}
         </div>
       </Reveal>
 
-      {/* ============ RAILS ============ */}
+      {/* ============ RAILS / EMPTY SHELF ============ */}
       {!data ? (
         <div className="space-y-12 mb-12"><SkelRow /><SkelRow /><SkelRow /></div>
-      ) : (
+      ) : hasApps ? (
         <>
           <Reveal><Rail title="Popular right now" sub="Most downloaded across all devices" href="/apps?sort=downloads">
             {data.popular.map((a, i) => <RailCard key={a.id} app={a} index={i} />)}
@@ -152,51 +314,6 @@ export default function Home() {
           <Reveal><Rail title="New & noteworthy" sub="Fresh releases, recently processed and indexed" href="/apps?sort=newest">
             {data.newest.map((a, i) => <RailCard key={a.id} app={a} index={i} />)}
           </Rail></Reveal>
-
-          {/* pipeline band */}
-          <Reveal className="mb-12">
-            <div className="relative overflow-hidden rounded-2xl border border-line bg-panel">
-              <div className="kaisel-grid absolute inset-0" />
-              <div className="relative grid lg:grid-cols-2 gap-8 p-6 sm:p-10">
-                <div>
-                  <Badge tone="jade" className="mb-4"><Icon name="layers" size={11} /> The Kaisel pipeline</Badge>
-                  <h2 className="font-disp font-bold text-[24px] sm:text-[30px] tracking-tight leading-tight">One upload.<br />A build for every device.</h2>
-                  <p className="text-mut text-[14px] leading-relaxed mt-4 max-w-md">
-                    Developers ship APKs or Android App Bundles. The <b className="text-ink">ArtifactProcessor</b> validates the container,
-                    parses the manifest, and derives device-compatible APK sets — so a Pixel 9 Pro never downloads x86 code it can't run.
-                  </p>
-                  <div className="grid grid-cols-2 gap-3 mt-6 max-w-md">
-                    {[["box", "Validate container & signing"], ["cpu", "Extract ABI / density / SDK"], ["layers", "Generate APK sets"], ["phone", "Index per-device compatibility"]].map(([ic, t]) => (
-                      <div key={t} className="flex items-start gap-2.5 text-[12.5px] text-ink/85">
-                        <span className="w-7 h-7 rounded-lg bg-jade/12 border border-jade/30 grid place-items-center text-jade shrink-0"><Icon name={ic} size={14} /></span>{t}
-                      </div>
-                    ))}
-                  </div>
-                  <button onClick={() => navigate("/dev")} className="btn-primary mt-7 px-5 py-2.5 text-[13.5px] inline-flex items-center gap-2 cursor-pointer">
-                    <Icon name="rocket" size={15} /> Publish on Kaisel
-                  </button>
-                </div>
-                <div className="term rounded-xl p-4 sm:p-5 overflow-hidden relative">
-                  <div className="absolute left-0 right-0 h-10 bg-gradient-to-b from-jade/8 to-transparent pointer-events-none" style={{ animation: "k-scan 4.5s linear infinite" }} />
-                  <div className="text-mut text-[11px] mb-2">artifact-processor · job ksl_8f3a21</div>
-                  <pre className="whitespace-pre-wrap leading-relaxed">
-{`$ kaisel ingest rift-racers-412.aab
-`}<span className="lv-info">→</span>{` ZIP central directory ............ `}<span className="lv-ok">ok · 1,284 entries
-</span><span className="lv-info">→</span>{` manifest.pb ..................... `}<span className="lv-ok">minSdk 30 · target 35
-</span><span className="lv-info">→</span>{` native libs ..................... `}<span className="lv-ok">arm64-v8a, armeabi-v7a
-</span><span className="lv-info">→</span>{` signing block ................... `}<span className="lv-ok">v2+v3 · preserved
-</span><span className="lv-info">→</span>{` bundletool generate-apks ........ `}<span className="lv-warn">embedded expander
-</span>{`  ✓ base.apk                      14.2 MB
-  ✓ config.arm64_v8a.apk           6.9 MB
-  ✓ config.armeabi_v7a.apk         6.4 MB
-  ✓ config.xxhdpi.apk              3.1 MB
-`}<span className="lv-ok">READY</span>{` · compatibility index rebuilt · 4 artifacts live`}
-                  </pre>
-                </div>
-              </div>
-            </div>
-          </Reveal>
-
           <div className="grid lg:grid-cols-2 gap-x-8">
             <Reveal><Rail title="Top games" href="/apps?cat=games">{data.games.map((a, i) => <RailCard key={a.id} app={a} index={i} />)}</Rail></Reveal>
             <Reveal><Rail title="Top productivity" href="/apps?cat=productivity">{data.productivity.map((a, i) => <RailCard key={a.id} app={a} index={i} />)}</Rail></Reveal>
@@ -204,25 +321,30 @@ export default function Home() {
           <Reveal><Rail title="Essential tools" sub="Utilities and tooling, split-APK optimized" href="/apps?cat=tools">
             {data.tools.map((a, i) => <RailCard key={a.id} app={a} index={i} />)}
           </Rail></Reveal>
-
-          {/* recommended for device */}
-          <Reveal className="mb-12">
-            <div className="flex items-end justify-between gap-4 mb-4">
-              <div>
-                <h2 className="font-disp font-bold text-[22px] tracking-tight flex items-center gap-2.5">
-                  Recommended for {device.label}
-                  {device.detected && <Badge tone="jade"><Icon name="cpu" size={11} /> auto-identified</Badge>}
-                </h2>
-                <p className="text-mut text-[13px] mt-0.5 font-mono">API {device.androidApi} · {device.abi} · {densityLabel(device.density)}{device.formFactor ? ` · ${device.formFactor}` : ""} — every app below has a compatible artifact</p>
+          {data.recommended.length > 0 && (
+            <Reveal className="mb-12">
+              <div className="flex items-end justify-between gap-4 mb-4">
+                <div>
+                  <h2 className="font-disp font-bold text-[22px] tracking-tight flex items-center gap-2.5">
+                    Recommended for {device.label}
+                    {device.detected && <Badge tone="jade"><Icon name="cpu" size={11} /> auto-identified</Badge>}
+                  </h2>
+                  <p className="text-mut text-[13px] mt-0.5 font-mono">API {device.androidApi} · {device.abi} · {densityLabel(device.density)}{device.formFactor ? ` · ${device.formFactor}` : ""} — every app below has a compatible artifact</p>
+                </div>
+                <a href="#/device" className="btn-ghost hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-[12.5px] font-medium hover:text-jade shrink-0">
+                  Device Lab <Icon name="arrow-r" size={13} />
+                </a>
               </div>
-              <a href="#/device" className="btn-ghost hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-[12.5px] font-medium hover:text-jade shrink-0">
-                Device Lab <Icon name="arrow-r" size={13} />
-              </a>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-2">
-              {data.recommended.slice(0, 8).map((a, i) => <AppRow key={a.id} app={a} index={i} />)}
-            </div>
-          </Reveal>
+              <div className="grid sm:grid-cols-2 gap-2">
+                {data.recommended.slice(0, 8).map((a, i) => <AppRow key={a.id} app={a} index={i} />)}
+              </div>
+            </Reveal>
+          )}
+        </>
+      ) : (
+        <>
+          <GhostShelf />
+          <PublishStrip />
         </>
       )}
 
@@ -248,7 +370,7 @@ export default function Home() {
             {[
               ["Intake vault", "operational", "jade"],
               ["ArtifactProcessor", "embedded expander", "gold"],
-              ["Compatibility index", `${totalArtifacts} artifacts`, "jade"],
+              ["Compatibility index", hasApps ? `${totalArtifacts} artifacts` : "online · awaiting builds", "jade"],
               ["Hash verification", "SHA-256 · WebCrypto", "jade"],
               ["Download CDN", "signed URLs · 90s TTL", "jade"],
             ].map(([k, v, tone]) => (
