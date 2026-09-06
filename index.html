@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Kaisel Store — an alternative Android app store with device-targeted APK distribution from AAB and APK artifacts." />
+    <title>Kaisel Store — Android apps, engineered per device</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='1' y='1' width='30' height='30' rx='8' fill='%230d1e40'/%3E%3Cpath d='M8 24V8h3.4v6.2L17.6 8h4.2l-6.8 7 7 9h-4.3l-5-6.6-.9.9V24H8z' fill='%23eef3fc'/%3E%3Cpath d='M9.5 4.5l3 2 3.5-2.6 3.5 2.6 3-2' stroke='%23e2b054' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>html, body { margin: 0; background: #f4f6fb; }</style>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("kaisel.theme");
+          if (!t) t = "light";
+          document.documentElement.setAttribute("data-theme", t);
+          document.documentElement.classList.toggle("dark", t === "dark");
+          if (t === "dark") {
+            document.documentElement.style.background = "#0a1322";
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
